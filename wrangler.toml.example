@@ -1,0 +1,8 @@
+name = "spooltrack-sync"
+main = "cloudflare-worker.js"
+compatibility_date = "2026-05-28"
+
+# Nach dem Erstellen des KV-Namespace die ID hier einsetzen.
+[[kv_namespaces]]
+binding = "SPOOLTRACK_KV"
+id = "DEINE_KV_NAMESPACE_ID"
