@@ -1,0 +1,1252 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SpoolTrack" />
+  <title>SpoolTrack – Filamentverwaltung</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: rgba(15, 23, 42, 0.82);
+      --panel-strong: #111827;
+      --card: rgba(30, 41, 59, 0.74);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --line: rgba(148, 163, 184, 0.22);
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --danger: #fb7185;
+      --warning: #fbbf24;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.24), transparent 32%),
+        radial-gradient(circle at 90% 0%, rgba(34, 197, 94, 0.14), transparent 28%),
+        linear-gradient(135deg, #020617 0%, #0f172a 50%, #111827 100%);
+    }
+
+    a { color: inherit; }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 42px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 14px 0;
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.74);
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: #020617;
+      background: linear-gradient(135deg, var(--accent), #a7f3d0);
+      font-weight: 900;
+      box-shadow: 0 12px 32px rgba(56, 189, 248, 0.32);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 52vw;
+    }
+
+    .nav-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    button, .button, select, input, textarea {
+      font: inherit;
+    }
+
+    button, .button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 15px;
+      cursor: pointer;
+      color: var(--text);
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid var(--line);
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+    }
+
+    button:hover, .button:hover { transform: translateY(-1px); border-color: rgba(56, 189, 248, 0.5); }
+    button:active { transform: translateY(0); }
+    button.primary { background: linear-gradient(135deg, #0284c7, #22c55e); color: white; border-color: transparent; font-weight: 800; }
+    button.danger { background: rgba(190, 18, 60, 0.24); border-color: rgba(251, 113, 133, 0.36); color: #fecdd3; }
+    button.ghost { background: transparent; }
+    button.small { padding: 8px 11px; min-height: 36px; font-size: .9rem; }
+
+    main { display: grid; gap: 18px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-top: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-copy { padding: clamp(22px, 4vw, 42px); }
+    .eyebrow { color: #93c5fd; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: .78rem; }
+    h2 { margin: 12px 0 8px; font-size: clamp(2rem, 4vw, 4rem); line-height: .96; letter-spacing: -.06em; }
+    .lead { color: #cbd5e1; font-size: 1.06rem; line-height: 1.6; max-width: 66ch; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
+    .stat {
+      padding: 15px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, .86);
+      border: 1px solid var(--line);
+    }
+    .stat strong { display: block; font-size: 1.35rem; }
+    .stat span { color: var(--muted); font-size: .86rem; }
+
+    .hero-card { padding: 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; }
+    .meter-big {
+      width: 210px;
+      height: 210px;
+      margin: 0 auto;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--accent-2) var(--inventoryPercent), rgba(148, 163, 184, 0.16) 0);
+      position: relative;
+      box-shadow: inset 0 0 40px rgba(0,0,0,.25);
+    }
+    .meter-big::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      background: #0f172a;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+    }
+    .meter-big > div { position: relative; z-index: 1; text-align: center; }
+    .meter-big strong { font-size: 2.1rem; display: block; }
+    .meter-big span { color: var(--muted); }
+
+    .section-title { display: flex; justify-content: space-between; align-items: end; gap: 14px; margin-top: 8px; }
+    .section-title h3 { margin: 0; font-size: 1.45rem; }
+    .section-title p { margin: 5px 0 0; color: var(--muted); }
+
+    .toolbar { display: grid; grid-template-columns: 1fr 170px 150px; gap: 10px; margin-top: 14px; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: var(--text);
+      background: rgba(2, 6, 23, .56);
+      outline: none;
+      min-height: 45px;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(56, 189, 248, 0.72); box-shadow: 0 0 0 4px rgba(56, 189, 248, .11); }
+    label { display: block; margin: 0 0 7px; color: #cbd5e1; font-weight: 750; font-size: .9rem; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px; }
+    .spool-card {
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      min-height: 240px;
+    }
+    .spool-top { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+    .color-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,.45); box-shadow: 0 8px 20px rgba(0,0,0,.28); flex: 0 0 auto; background: var(--dot); }
+    .spool-title { min-width: 0; flex: 1; }
+    .spool-title h4 { margin: 0; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .spool-title p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+    .badge { padding: 6px 9px; border-radius: 999px; background: rgba(56, 189, 248, .12); color: #bae6fd; border: 1px solid rgba(56, 189, 248, .22); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+    .badge.warn { background: rgba(251, 191, 36, .12); color: #fde68a; border-color: rgba(251, 191, 36, .22); }
+    .badge.danger { background: rgba(251, 113, 133, .12); color: #fecdd3; border-color: rgba(251, 113, 133, .22); }
+
+    .progress { height: 13px; border-radius: 999px; background: rgba(148,163,184,.14); overflow: hidden; border: 1px solid rgba(148,163,184,.13); }
+    .progress > div { height: 100%; width: var(--pct); background: linear-gradient(90deg, var(--accent-2), var(--accent)); border-radius: inherit; }
+    .spool-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mini { padding: 10px; background: rgba(15,23,42,.62); border: 1px solid var(--line); border-radius: 14px; }
+    .mini b { display: block; }
+    .mini span { color: var(--muted); font-size: .82rem; }
+    .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
+
+    .empty {
+      margin-top: 14px;
+      padding: 35px 20px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed rgba(148, 163, 184, .35);
+      border-radius: 20px;
+      background: rgba(15, 23, 42, .5);
+    }
+
+    dialog {
+      border: 0;
+      border-radius: 24px;
+      padding: 0;
+      background: #0f172a;
+      color: var(--text);
+      width: min(760px, calc(100% - 24px));
+      box-shadow: 0 36px 100px rgba(0,0,0,.65);
+    }
+    dialog::backdrop { background: rgba(2, 6, 23, .78); backdrop-filter: blur(4px); }
+    .modal-head { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+    .modal-head h3 { margin: 0; }
+    .modal-body { padding: 20px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; padding: 16px 20px; border-top: 1px solid var(--line); }
+
+    .qr-wrap { display: grid; grid-template-columns: 240px 1fr; gap: 18px; align-items: start; }
+    .qr-box { background: white; border-radius: 16px; padding: 14px; width: 240px; min-height: 240px; display: grid; place-items: center; overflow: hidden; }
+    .qr-info code, code.inline { display: inline-block; padding: 4px 7px; border-radius: 8px; background: rgba(2,6,23,.5); border: 1px solid var(--line); color: #bae6fd; word-break: break-all; }
+    .history { display: grid; gap: 8px; max-height: 260px; overflow: auto; padding-right: 4px; }
+    .history-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(15,23,42,.55); border: 1px solid var(--line); }
+    .history-row span { color: var(--muted); font-size: .88rem; }
+    .history-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .history-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .history-actions button { padding: 7px 10px; font-size: .78rem; }
+    .last-action { margin-top: 14px; padding: 12px; border-radius: 16px; background: rgba(34, 211, 238, .08); border: 1px solid rgba(34, 211, 238, .22); display: grid; gap: 10px; }
+    .last-action-main { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .last-action-main p { margin: 3px 0 0; color: var(--muted); font-size: .9rem; }
+    .last-action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+      background: rgba(15,23,42,.94);
+      color: white;
+      border: 1px solid var(--line);
+      padding: 12px 16px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      transition: .2s ease;
+      max-width: calc(100% - 24px);
+      text-align: center;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    .sync-panel { padding: 16px 18px; display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
+    .sync-panel p { margin: 5px 0 0; color: var(--muted); }
+    .sync-status { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 999px; background: rgba(148, 163, 184, .12); border: 1px solid var(--line); color: #cbd5e1; font-size: .9rem; white-space: nowrap; }
+    .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 4px rgba(148,163,184,.12); }
+    .sync-status.online .sync-dot { background: var(--accent-2); box-shadow: 0 0 0 4px rgba(34,197,94,.16); }
+    .sync-status.error .sync-dot { background: var(--danger); box-shadow: 0 0 0 4px rgba(251,113,133,.16); }
+    .sync-status.syncing .sync-dot { background: var(--warning); box-shadow: 0 0 0 4px rgba(251,191,36,.16); }
+
+    .footer-panel { padding: 18px; color: var(--muted); font-size: .92rem; }
+    .footer-panel strong { color: var(--text); }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { grid-template-columns: 1fr; }
+      .qr-wrap { grid-template-columns: 1fr; }
+      .qr-box { width: 100%; }
+    }
+
+    @media (max-width: 620px) {
+      .app-shell { width: min(100% - 18px, 1180px); padding-top: 8px; }
+      header { padding-top: 8px; }
+      .topbar { border-radius: 22px; align-items: stretch; flex-direction: column; }
+      .nav-actions { justify-content: stretch; display: grid; grid-template-columns: 1fr 1fr; }
+      .nav-actions button { width: 100%; }
+      .brand p { max-width: 100%; }
+      .stats-grid, .grid, .form-grid { grid-template-columns: 1fr; }
+      .meter-big { width: 190px; height: 190px; }
+      .section-title { display: block; }
+      .spool-meta { grid-template-columns: 1fr; }
+      .sync-panel { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body { background: white; color: black; }
+      header, main > :not(.print-area), .modal-actions, .toast { display: none !important; }
+      dialog { position: static !important; display: block !important; box-shadow: none; width: 100%; color: black; background: white; }
+      .modal-head, .modal-body { border: 0; }
+      .qr-info, .modal-head button { display: none; }
+      .qr-wrap { display: block; }
+      .qr-box { margin: 0 auto; border: 2px solid #000; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-icon">ST</div>
+          <div>
+            <h1>SpoolTrack</h1>
+            <p>QR-Filamentverwaltung für 1-kg-Bambu-Spulen</p>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <button class="primary" id="addSpoolBtn">+ Spule</button>
+          <button id="exportBtn">Export</button>
+          <button id="importBtn">Import</button>
+          <button id="syncNowBtn">Jetzt synchronisieren</button>
+          <button id="syncSettingsBtn">Cloud-Setup</button>
+          <button class="ghost" id="resetDemoBtn">Demo</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="panel hero-copy">
+          <div class="eyebrow">Für Etsy, Bambu Studio & Lagerübersicht</div>
+          <h2>Scannen. Verbrauch eintragen. Restgewicht behalten.</h2>
+          <p class="lead">Jede Bambu-Spule startet automatisch mit 1000 g Filament. Nach einem Druck scannst du den QR-Code auf der Spule, gibst den Verbrauch aus Bambu Studio in Gramm ein und SpoolTrack zieht ihn vom Lager ab.</p>
+          <div class="stats-grid">
+            <div class="stat"><strong id="statSpools">0</strong><span>Spulen</span></div>
+            <div class="stat"><strong id="statWeight">0 g</strong><span>Restfilament</span></div>
+            <div class="stat"><strong id="statLow">0</strong><span>fast leer</span></div>
+          </div>
+        </div>
+        <div class="panel hero-card">
+          <div class="meter-big" id="inventoryMeter" style="--inventoryPercent: 0%;">
+            <div><strong id="inventoryPercentText">0%</strong><span>durchschnittlich voll</span></div>
+          </div>
+          <button class="primary" id="quickConsumeBtn">QR-/Spulenverbrauch öffnen</button>
+        </div>
+      </section>
+
+      <section class="panel" style="padding:18px;">
+        <div class="section-title">
+          <div>
+            <h3>Filamentlager</h3>
+            <p>Suche, filtere und verwalte deine Bambu-Spulen.</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <input id="searchInput" placeholder="Suchen nach Farbe, Material, Name ..." />
+          <select id="materialFilter">
+            <option value="all">Alle Materialien</option>
+            <option>PLA</option>
+            <option>PETG</option>
+            <option>TPU</option>
+            <option>ABS</option>
+            <option>ASA</option>
+            <option>PA</option>
+            <option>PC</option>
+          </select>
+          <select id="sortSelect">
+            <option value="newest">Neueste zuerst</option>
+            <option value="lowest">Wenig Rest zuerst</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <div id="spoolGrid" class="grid"></div>
+        <div id="emptyState" class="empty" hidden>
+          Noch keine Spulen vorhanden. Erstelle deine erste Bambu-Spule und generiere einen QR-Code.
+        </div>
+      </section>
+
+      <section class="panel sync-panel">
+        <div>
+          <strong>Cloudflare-Sync</strong>
+          <p>Speichert jede Änderung automatisch in Cloudflare KV, lädt beim Start Cloud-Daten und aktualisiert die Anzeige jede Sekunde im Hintergrund – ohne sichtbaren Seiten-Reload.</p>
+        </div>
+        <span class="sync-status" id="syncStatus"><span class="sync-dot"></span><span id="syncStatusText">Lokal</span></span>
+      </section>
+
+      <section class="panel footer-panel">
+        <strong>iPhone-Tipp:</strong> Öffne die GitHub-Pages-Seite in Safari und wähle „Teilen → Zum Home-Bildschirm“. Mit Cloudflare-Sync sind die Daten zusätzlich online gespeichert.
+      </section>
+    </main>
+  </div>
+
+  <dialog id="spoolDialog">
+    <form method="dialog" id="spoolForm">
+      <div class="modal-head">
+        <h3 id="spoolDialogTitle">Neue Spule</h3>
+        <button type="button" class="small ghost" data-close="spoolDialog">Schliessen</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="full">
+            <label for="spoolName">Spulenname</label>
+            <input id="spoolName" required placeholder="z. B. Bambu PLA Basic Schwarz" />
+          </div>
+          <div>
+            <label for="spoolMaterial">Material</label>
+            <select id="spoolMaterial">
+              <option>PLA</option>
+              <option>PETG</option>
+              <option>TPU</option>
+              <option>ABS</option>
+              <option>ASA</option>
+              <option>PA</option>
+              <option>PC</option>
+            </select>
+          </div>
+          <div>
+            <label for="spoolColor">Farbe</label>
+            <input id="spoolColor" placeholder="Schwarz, Weiss, Rot ..." />
+          </div>
+          <div>
+            <label for="spoolColorHex">Farbpunkt</label>
+            <input id="spoolColorHex" type="color" value="#111827" />
+          </div>
+          <div>
+            <label for="spoolBrand">Hersteller / Typ</label>
+            <input id="spoolBrand" placeholder="Bambu Lab" value="Bambu Lab" />
+          </div>
+          <div>
+            <label for="spoolRemaining">Restgewicht in g</label>
+            <input id="spoolRemaining" type="number" min="0" max="1000" step="1" value="1000" />
+          </div>
+          <div class="full">
+            <label for="spoolNotes">Notizen</label>
+            <textarea id="spoolNotes" placeholder="z. B. AMS Slot, Druckqualität, Projekt ..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="danger" id="deleteSpoolBtn" hidden>Löschen</button>
+        <button type="submit" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="consumeDialog">
+    <form method="dialog" id="consumeForm">
+      <div class="modal-head">
+        <h3 id="consumeTitle">Verbrauch eintragen</h3>
+        <button type="button" class="small ghost" data-close="consumeDialog">Schliessen</button>
+      </div>
+      <div class="modal-body">
+        <div class="spool-card" style="margin-bottom:14px; min-height:auto;">
+          <div class="spool-top">
+            <div class="color-dot" id="consumeDot" style="--dot:#111827"></div>
+            <div class="spool-title">
+              <h4 id="consumeName">Spule</h4>
+              <p id="consumeMeta">Material · Farbe</p>
+            </div>
+            <span class="badge" id="consumeRemaining">1000 g</span>
+          </div>
+          <div class="progress"><div id="consumeProgress" style="--pct:100%"></div></div>
+        </div>
+        <div class="form-grid">
+          <div>
+            <label for="consumeAmount">Verbrauch aus Bambu Studio in g</label>
+            <input id="consumeAmount" type="number" min="0" max="1000" step="0.1" placeholder="z. B. 37" required />
+          </div>
+          <div>
+            <label for="consumeProject">Projekt / Notiz</label>
+            <input id="consumeProject" placeholder="z. B. Kabelhalter Etsy" />
+          </div>
+          <div class="full">
+            <p style="color:var(--muted); margin:0;">Tipp: Bambu Studio zeigt nach dem Slicen den benötigten Filamentverbrauch in Gramm an. Diesen Wert hier eintragen.</p>
+          </div>
+        </div>
+        <div id="lastActionPanel" class="last-action" hidden>
+          <div class="last-action-main">
+            <div>
+              <strong id="lastActionText">Zuletzt abgezogen: 0 g</strong>
+              <p id="lastActionNote">Falls du dich vertippt hast, kannst du den letzten Verbrauch rückgängig machen oder bearbeiten.</p>
+            </div>
+            <div class="last-action-buttons">
+              <button type="button" class="small" id="editLastBtn">Bearbeiten</button>
+              <button type="button" class="small danger" id="undoLastBtn">Rückgängig</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <label>Verbrauchsverlauf</label>
+          <div id="historyList" class="history"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="setFullBtn">Auf 1000 g setzen</button>
+        <button type="submit" class="primary">Verbrauch abziehen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="qrDialog">
+    <div class="modal-head">
+      <h3 id="qrTitle">QR-Code</h3>
+      <button type="button" class="small ghost" data-close="qrDialog">Schliessen</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-wrap">
+        <div class="qr-box" id="qrBox"></div>
+        <div class="qr-info">
+          <p>Dieser QR-Code öffnet direkt das Verbrauchsfenster dieser Spule.</p>
+          <p><strong>Spule:</strong> <span id="qrSpoolName"></span></p>
+          <p><strong>QR-Link:</strong><br><code id="qrLink"></code></p>
+          <p style="color:var(--muted);">Klebe den QR-Code auf die Spule. Mit der iPhone-Kamera scannen, Verbrauch in g eintragen, fertig.</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="copyQrLinkBtn">Link kopieren</button>
+      <button id="downloadQrBtn">QR speichern</button>
+      <button class="primary" onclick="window.print()">Drucken</button>
+    </div>
+  </dialog>
+
+  <dialog id="syncDialog">
+    <form method="dialog" id="syncForm">
+      <div class="modal-head">
+        <h3>Cloudflare-Sync</h3>
+        <button type="button" class="small ghost" data-close="syncDialog">Schliessen</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="full">
+            <label for="cloudApiUrl">Cloudflare Worker API-URL</label>
+            <input id="cloudApiUrl" placeholder="https://spooltrack-sync.deinname.workers.dev" />
+          </div>
+          <div class="full">
+            <p style="color:var(--muted); margin:0;">Die Worker-URL wird dauerhaft im Browser gespeichert. Danach lädt SpoolTrack beim Start automatisch Cloud-Daten, speichert jede Änderung online und holt jede Sekunde neue Daten im Hintergrund.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="disableSyncBtn">Sync deaktivieren</button>
+        <button type="button" id="pullCloudBtn">Jetzt synchronisieren</button>
+        <button type="submit" class="primary">URL speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <input type="file" id="importFile" accept="application/json" hidden />
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'spooltrack.v1.spools';
+    const META_STORAGE_KEY = 'spooltrack.v1.meta';
+    const SYNC_CONFIG_KEY = 'spooltrack.v1.syncConfig';
+    const CLIENT_ID_KEY = 'spooltrack.v1.clientId';
+    // Optional: Hier kannst du deine Worker-URL fest eintragen, dann ist sie automatisch für neue Geräte voreingestellt.
+    const DEFAULT_CLOUD_API_URL = '';
+    const $ = (id) => document.getElementById(id);
+    const formatG = (value) => `${Math.max(0, Math.round(value * 10) / 10).toLocaleString('de-CH')} g`;
+    const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
+    let spools = loadSpools();
+    let meta = loadMeta();
+    let syncConfig = loadSyncConfig();
+    let clientId = getClientId();
+    let syncTimer = null;
+    let syncBusy = false;
+    let pushTimer = null;
+    let pendingPush = false;
+    let lastPullAt = 0;
+    let lastRemoteUpdatedAt = Number(meta.updatedAt || 0);
+    let editingId = null;
+    let consumingId = null;
+    let qrCurrentUrl = '';
+
+    const demoSpools = [
+      { id: crypto.randomUUID(), name: 'Bambu PLA Basic Schwarz', material: 'PLA', color: 'Schwarz', colorHex: '#111827', brand: 'Bambu Lab', remaining: 742, notes: 'Standard-Spule für Etsy-Produkte', createdAt: Date.now() - 86400000 * 3, history: [historyItem(118, 'Kabelhalter'), historyItem(140, 'Desk Organizer')] },
+      { id: crypto.randomUUID(), name: 'Bambu PETG HF Weiss', material: 'PETG', color: 'Weiss', colorHex: '#f8fafc', brand: 'Bambu Lab', remaining: 1000, notes: 'Noch unbenutzt', createdAt: Date.now() - 86400000, history: [] },
+      { id: crypto.randomUUID(), name: 'Bambu PLA Matte Rot', material: 'PLA', color: 'Rot', colorHex: '#dc2626', brand: 'Bambu Lab', remaining: 86, notes: 'Fast leer', createdAt: Date.now() - 86400000 * 9, history: [historyItem(914, 'Grosses Projekt')] }
+    ];
+
+    function historyItem(amount, project = '') {
+      return { id: crypto.randomUUID(), amount: Number(amount), project, date: new Date().toISOString() };
+    }
+
+    function loadSpools() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function loadMeta() {
+      try {
+        const raw = localStorage.getItem(META_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : { updatedAt: 0 };
+      } catch {
+        return { updatedAt: 0 };
+      }
+    }
+
+    function saveMeta() {
+      localStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
+    }
+
+    function loadSyncConfig() {
+      try {
+        const raw = localStorage.getItem(SYNC_CONFIG_KEY);
+        return raw ? JSON.parse(raw) : { apiUrl: DEFAULT_CLOUD_API_URL };
+      } catch {
+        return { apiUrl: DEFAULT_CLOUD_API_URL };
+      }
+    }
+
+    function saveSyncConfig() {
+      localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig));
+    }
+
+    function getClientId() {
+      let id = localStorage.getItem(CLIENT_ID_KEY);
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem(CLIENT_ID_KEY, id);
+      }
+      return id;
+    }
+
+    function saveSpools(syncRemote = true) {
+      meta.updatedAt = Date.now();
+      meta.sourceId = clientId;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(spools));
+      saveMeta();
+      render();
+      if (syncRemote) scheduleCloudSave();
+    }
+
+    function toast(message) {
+      const el = $('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function normalizeApiUrl() {
+      return (syncConfig.apiUrl || '').trim().replace(/\/+$/, '');
+    }
+
+    function setSyncStatus(mode, text) {
+      const box = $('syncStatus');
+      const label = $('syncStatusText');
+      if (!box || !label) return;
+      box.classList.remove('online', 'error', 'syncing');
+      if (mode) box.classList.add(mode);
+      label.textContent = text;
+    }
+
+    async function fetchCloud(method = 'GET', body = null) {
+      const apiUrl = normalizeApiUrl();
+      if (!apiUrl) throw new Error('Keine Cloudflare Worker URL gesetzt.');
+      const response = await fetch(`${apiUrl}/spools`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : null,
+        cache: 'no-store'
+      });
+      if (!response.ok) {
+        let details = '';
+        try { details = await response.text(); } catch {}
+        throw new Error(`Cloud-Sync Fehler ${response.status}: ${details || response.statusText}`);
+      }
+      return response.json();
+    }
+
+    function scheduleCloudSave(delay = 250) {
+      if (!normalizeApiUrl()) {
+        setSyncStatus('', 'Lokal');
+        return;
+      }
+      pendingPush = true;
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => pushCloud(), delay);
+    }
+
+    async function pushCloud() {
+      const apiUrl = normalizeApiUrl();
+      if (!apiUrl) {
+        setSyncStatus('', 'Lokal');
+        return;
+      }
+      if (!pendingPush && Number(meta.updatedAt || 0) <= lastRemoteUpdatedAt) return;
+      try {
+        setSyncStatus('syncing', 'Speichere ...');
+        const data = await fetchCloud('POST', { spools, updatedAt: meta.updatedAt, sourceId: clientId });
+        pendingPush = false;
+        lastRemoteUpdatedAt = Number(data.updatedAt || meta.updatedAt || Date.now());
+        setSyncStatus('online', 'Cloud aktuell');
+      } catch (error) {
+        setSyncStatus('error', 'Sync-Fehler');
+        console.warn(error);
+        toast(error.message || 'Cloud-Sync Fehler');
+        toast(error.message || 'Cloud-Sync Fehler');
+      }
+    }
+
+    async function pullCloud(showMessage = false) {
+      const apiUrl = normalizeApiUrl();
+      if (!apiUrl || syncBusy) return;
+      syncBusy = true;
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+      try {
+        const data = await fetchCloud('GET');
+        lastPullAt = Date.now();
+        const remoteUpdatedAt = Number(data.updatedAt || 0);
+        if (Array.isArray(data.spools) && remoteUpdatedAt > Number(meta.updatedAt || 0)) {
+          spools = data.spools;
+          meta.updatedAt = remoteUpdatedAt;
+          meta.sourceId = data.sourceId || 'cloud';
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(spools));
+          saveMeta();
+          render();
+          requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
+          if (showMessage) toast('Cloud-Daten geladen.');
+        }
+        lastRemoteUpdatedAt = Math.max(lastRemoteUpdatedAt, remoteUpdatedAt);
+        setSyncStatus('online', 'Cloud aktuell');
+      } catch (error) {
+        setSyncStatus('error', 'Sync-Fehler');
+        console.warn(error);
+      } finally {
+        syncBusy = false;
+      }
+    }
+
+    async function startCloudSync() {
+      if (syncTimer) clearInterval(syncTimer);
+      if (!normalizeApiUrl()) {
+        setSyncStatus('', 'Lokal');
+        return;
+      }
+      setSyncStatus('syncing', 'Starte Sync ...');
+      await pullCloud(false);          // Beim Start automatisch Cloud-Daten laden
+      await pushCloud();              // Lokale neuere Änderungen automatisch speichern
+      syncTimer = setInterval(() => {
+        pullCloud(false);             // Jede Sekunde neue Cloud-Daten holen
+        if (pendingPush) pushCloud();  // Offene lokale Änderungen automatisch speichern
+      }, 1000);
+    }
+
+    function getSpool(id) { return spools.find(s => s.id === id); }
+
+    function statusBadge(remaining) {
+      if (remaining <= 100) return '<span class="badge danger">fast leer</span>';
+      if (remaining <= 250) return '<span class="badge warn">wenig</span>';
+      return '<span class="badge">ok</span>';
+    }
+
+    function getFilteredSpools() {
+      const q = $('searchInput').value.trim().toLowerCase();
+      const material = $('materialFilter').value;
+      const sort = $('sortSelect').value;
+      let list = [...spools].filter(s => {
+        const matchesSearch = [s.name, s.material, s.color, s.brand, s.notes].join(' ').toLowerCase().includes(q);
+        const matchesMaterial = material === 'all' || s.material === material;
+        return matchesSearch && matchesMaterial;
+      });
+      if (sort === 'lowest') list.sort((a, b) => a.remaining - b.remaining);
+      if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+      if (sort === 'newest') list.sort((a, b) => b.createdAt - a.createdAt);
+      return list;
+    }
+
+    function renderStats() {
+      const totalRemaining = spools.reduce((sum, s) => sum + Number(s.remaining || 0), 0);
+      const maxTotal = spools.length * 1000;
+      const pct = maxTotal ? Math.round((totalRemaining / maxTotal) * 100) : 0;
+      $('statSpools').textContent = spools.length;
+      $('statWeight').textContent = formatG(totalRemaining);
+      $('statLow').textContent = spools.filter(s => s.remaining <= 100).length;
+      $('inventoryMeter').style.setProperty('--inventoryPercent', `${pct}%`);
+      $('inventoryPercentText').textContent = `${pct}%`;
+    }
+
+    function renderCards() {
+      const grid = $('spoolGrid');
+      const list = getFilteredSpools();
+      $('emptyState').hidden = list.length !== 0;
+      grid.innerHTML = list.map(s => {
+        const pct = clamp((Number(s.remaining || 0) / 1000) * 100, 0, 100);
+        return `
+          <article class="spool-card">
+            <div class="spool-top">
+              <div class="color-dot" style="--dot:${escapeHtml(s.colorHex || '#111827')}"></div>
+              <div class="spool-title">
+                <h4 title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</h4>
+                <p>${escapeHtml(s.material)} · ${escapeHtml(s.color || 'Keine Farbe')} · ${escapeHtml(s.brand || 'Bambu Lab')}</p>
+              </div>
+              ${statusBadge(Number(s.remaining || 0))}
+            </div>
+            <div class="progress"><div style="--pct:${pct}%"></div></div>
+            <div class="spool-meta">
+              <div class="mini"><b>${formatG(s.remaining)}</b><span>Restgewicht</span></div>
+              <div class="mini"><b>${Math.round(pct)}%</b><span>Füllstand</span></div>
+            </div>
+            <div class="card-actions">
+              <button class="small primary" onclick="openConsume('${s.id}')">Verbrauch</button>
+              <button class="small" onclick="openQr('${s.id}')">QR-Code</button>
+              <button class="small" onclick="openEdit('${s.id}')">Bearbeiten</button>
+              <button class="small ghost" onclick="duplicateSpool('${s.id}')">Duplizieren</button>
+            </div>
+          </article>`;
+      }).join('');
+    }
+
+    function render() {
+      renderStats();
+      renderCards();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+    }
+
+    function openNew() {
+      editingId = null;
+      $('spoolDialogTitle').textContent = 'Neue Spule';
+      $('deleteSpoolBtn').hidden = true;
+      $('spoolName').value = '';
+      $('spoolMaterial').value = 'PLA';
+      $('spoolColor').value = '';
+      $('spoolColorHex').value = '#111827';
+      $('spoolBrand').value = 'Bambu Lab';
+      $('spoolRemaining').value = 1000;
+      $('spoolNotes').value = '';
+      $('spoolDialog').showModal();
+      setTimeout(() => $('spoolName').focus(), 100);
+    }
+
+    function openEdit(id) {
+      const s = getSpool(id);
+      if (!s) return;
+      editingId = id;
+      $('spoolDialogTitle').textContent = 'Spule bearbeiten';
+      $('deleteSpoolBtn').hidden = false;
+      $('spoolName').value = s.name;
+      $('spoolMaterial').value = s.material;
+      $('spoolColor').value = s.color || '';
+      $('spoolColorHex').value = s.colorHex || '#111827';
+      $('spoolBrand').value = s.brand || 'Bambu Lab';
+      $('spoolRemaining').value = s.remaining;
+      $('spoolNotes').value = s.notes || '';
+      $('spoolDialog').showModal();
+    }
+
+    function openConsume(id) {
+      const s = getSpool(id);
+      if (!s) return toast('Spule nicht gefunden.');
+      consumingId = id;
+      const pct = clamp((Number(s.remaining || 0) / 1000) * 100, 0, 100);
+      $('consumeName').textContent = s.name;
+      $('consumeMeta').textContent = `${s.material} · ${s.color || 'Keine Farbe'} · ${s.brand || 'Bambu Lab'}`;
+      $('consumeRemaining').textContent = formatG(s.remaining);
+      $('consumeDot').style.setProperty('--dot', s.colorHex || '#111827');
+      $('consumeProgress').style.setProperty('--pct', `${pct}%`);
+      $('consumeAmount').value = '';
+      $('consumeProject').value = '';
+      renderHistory(s);
+      $('consumeDialog').showModal();
+      setTimeout(() => $('consumeAmount').focus(), 100);
+    }
+
+    function getLastConsumption(s) {
+      const history = s.history || [];
+      for (let i = history.length - 1; i >= 0; i--) {
+        const item = history[i];
+        if (Number(item.amount || 0) > 0) return { item, index: i };
+      }
+      return null;
+    }
+
+    function updateConsumeSummary(s) {
+      const pct = clamp((Number(s.remaining || 0) / 1000) * 100, 0, 100);
+      $('consumeRemaining').textContent = formatG(s.remaining);
+      $('consumeProgress').style.setProperty('--pct', `${pct}%`);
+    }
+
+    function renderLastAction(s) {
+      const last = getLastConsumption(s);
+      const panel = $('lastActionPanel');
+      if (!last) {
+        panel.hidden = true;
+        return;
+      }
+      const { item } = last;
+      const date = new Date(item.date).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' });
+      $('lastActionText').textContent = `Zuletzt abgezogen: ${formatG(item.amount)} · ${date}`;
+      $('lastActionNote').textContent = item.project ? `Notiz: ${item.project}` : 'Keine Notiz hinterlegt.';
+      panel.hidden = false;
+    }
+
+    function renderHistory(s) {
+      renderLastAction(s);
+      const originalHistory = s.history || [];
+      const lastConsumption = getLastConsumption(s);
+      const history = [...originalHistory].map((h, originalIndex) => ({ ...h, originalIndex })).reverse();
+      $('historyList').innerHTML = history.length ? history.map(h => {
+        const date = new Date(h.date).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' });
+        const amountText = Number(h.amount || 0) > 0 ? `−${formatG(h.amount)}` : escapeHtml(h.project || 'Eintrag');
+        const noteText = Number(h.amount || 0) > 0 ? escapeHtml(h.project || 'Ohne Notiz') : 'Systemeintrag';
+        const isLastConsumption = lastConsumption && lastConsumption.index === h.originalIndex && Number(h.amount || 0) > 0;
+        const actions = isLastConsumption ? `
+          <div class="history-actions" aria-label="Letzten Verbrauch korrigieren">
+            <button type="button" class="small" data-history-action="edit" data-history-index="${h.originalIndex}">Bearbeiten</button>
+            <button type="button" class="small danger" data-history-action="undo" data-history-index="${h.originalIndex}">Rückgängig</button>
+          </div>` : '';
+        return `<div class="history-row">
+          <div><b>${amountText}</b><br><span>${noteText}</span></div>
+          <div class="history-right"><span>${date}</span>${actions}</div>
+        </div>`;
+      }).join('') : '<div class="empty" style="margin:0; padding:18px;">Noch kein Verbrauch eingetragen.</div>';
+    }
+
+    function openQr(id) {
+      const s = getSpool(id);
+      if (!s) return;
+      const url = makeSpoolUrl(id);
+      qrCurrentUrl = url;
+      $('qrSpoolName').textContent = s.name;
+      $('qrTitle').textContent = `QR-Code · ${s.name}`;
+      $('qrLink').textContent = url;
+      const box = $('qrBox');
+      box.innerHTML = '';
+
+      setTimeout(() => {
+        if (window.QRCode) {
+          new QRCode(box, { text: url, width: 210, height: 210, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+        } else {
+          const img = new Image();
+          img.alt = 'QR-Code';
+          img.width = 210;
+          img.height = 210;
+          img.src = `https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(url)}`;
+          box.appendChild(img);
+        }
+      }, 80);
+
+      $('qrDialog').showModal();
+    }
+
+    function makeSpoolUrl(id) {
+      const clean = `${location.origin}${location.pathname}`;
+      return `${clean}#spool=${encodeURIComponent(id)}&mode=consume`;
+    }
+
+    function duplicateSpool(id) {
+      const s = getSpool(id);
+      if (!s) return;
+      const copy = { ...s, id: crypto.randomUUID(), name: `${s.name} Kopie`, remaining: 1000, createdAt: Date.now(), history: [] };
+      spools.unshift(copy);
+      saveSpools();
+      toast('Spule dupliziert.');
+    }
+
+    $('addSpoolBtn').addEventListener('click', openNew);
+    $('quickConsumeBtn').addEventListener('click', () => {
+      if (!spools.length) return openNew();
+      openConsume(spools[0].id);
+    });
+
+    $('spoolForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = {
+        name: $('spoolName').value.trim(),
+        material: $('spoolMaterial').value,
+        color: $('spoolColor').value.trim(),
+        colorHex: $('spoolColorHex').value,
+        brand: $('spoolBrand').value.trim() || 'Bambu Lab',
+        remaining: clamp(Number($('spoolRemaining').value || 1000), 0, 1000),
+        notes: $('spoolNotes').value.trim()
+      };
+      if (!data.name) return toast('Bitte einen Spulennamen eingeben.');
+      if (editingId) {
+        const idx = spools.findIndex(s => s.id === editingId);
+        spools[idx] = { ...spools[idx], ...data };
+        toast('Spule gespeichert.');
+      } else {
+        spools.unshift({ id: crypto.randomUUID(), ...data, remaining: 1000, createdAt: Date.now(), history: [] });
+        toast('Neue 1-kg-Spule erstellt.');
+      }
+      saveSpools();
+      $('spoolDialog').close();
+    });
+
+    $('deleteSpoolBtn').addEventListener('click', () => {
+      if (!editingId) return;
+      const s = getSpool(editingId);
+      if (!confirm(`Spule "${s.name}" wirklich löschen?`)) return;
+      spools = spools.filter(s => s.id !== editingId);
+      saveSpools();
+      $('spoolDialog').close();
+      toast('Spule gelöscht.');
+    });
+
+    $('consumeForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const s = getSpool(consumingId);
+      if (!s) return;
+      const amount = Number($('consumeAmount').value);
+      if (!amount || amount <= 0) return toast('Bitte Verbrauch in Gramm eingeben.');
+      if (amount > s.remaining && !confirm('Der Verbrauch ist höher als das Restgewicht. Trotzdem auf 0 g setzen?')) return;
+      s.remaining = clamp(Number(s.remaining || 0) - amount, 0, 1000);
+      s.history = [...(s.history || []), historyItem(amount, $('consumeProject').value.trim())];
+      saveSpools();
+      updateConsumeSummary(s);
+      renderHistory(s);
+      $('consumeAmount').value = '';
+      $('consumeProject').value = '';
+      toast(`${formatG(amount)} abgezogen. Rest: ${formatG(s.remaining)}.`);
+    });
+
+    function undoLastConsumption() {
+      const s = getSpool(consumingId);
+      if (!s) return;
+      const last = getLastConsumption(s);
+      if (!last) return toast('Kein Verbrauch zum Rückgängig machen vorhanden.');
+      if (!confirm(`Letzten Verbrauch von ${formatG(last.item.amount)} wirklich rückgängig machen?`)) return;
+      s.remaining = clamp(Number(s.remaining || 0) + Number(last.item.amount || 0), 0, 1000);
+      s.history.splice(last.index, 1);
+      saveSpools();
+      updateConsumeSummary(s);
+      renderHistory(s);
+      toast(`Letzter Verbrauch rückgängig gemacht. Rest: ${formatG(s.remaining)}.`);
+    }
+
+    function editLastConsumption() {
+      const s = getSpool(consumingId);
+      if (!s) return;
+      const last = getLastConsumption(s);
+      if (!last) return toast('Kein Verbrauch zum Bearbeiten vorhanden.');
+      const oldAmount = Number(last.item.amount || 0);
+      const input = prompt('Neuen Verbrauch in Gramm eingeben:', String(oldAmount).replace('.', ','));
+      if (input === null) return;
+      const newAmount = Number(String(input).replace(',', '.'));
+      if (!newAmount || newAmount <= 0) return toast('Bitte einen gültigen Verbrauch in Gramm eingeben.');
+      const availableBeforeLast = clamp(Number(s.remaining || 0) + oldAmount, 0, 1000);
+      if (newAmount > availableBeforeLast && !confirm('Der neue Verbrauch ist höher als das verfügbare Restgewicht vor diesem Eintrag. Trotzdem auf 0 g setzen?')) return;
+      const newProject = prompt('Notiz für diesen Verbrauch:', last.item.project || '');
+      if (newProject === null) return;
+      last.item.amount = newAmount;
+      last.item.project = newProject.trim();
+      last.item.editedAt = new Date().toISOString();
+      s.remaining = clamp(availableBeforeLast - newAmount, 0, 1000);
+      saveSpools();
+      updateConsumeSummary(s);
+      renderHistory(s);
+      toast(`Letzter Verbrauch auf ${formatG(newAmount)} geändert. Rest: ${formatG(s.remaining)}.`);
+    }
+
+    $('undoLastBtn').addEventListener('click', undoLastConsumption);
+    $('editLastBtn').addEventListener('click', editLastConsumption);
+
+    $('historyList').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-history-action]');
+      if (!button) return;
+      const action = button.dataset.historyAction;
+      if (action === 'undo') undoLastConsumption();
+      if (action === 'edit') editLastConsumption();
+    });
+
+    $('setFullBtn').addEventListener('click', () => {
+      const s = getSpool(consumingId);
+      if (!s) return;
+      s.remaining = 1000;
+      s.history = [...(s.history || []), { id: crypto.randomUUID(), amount: 0, project: 'Auf 1000 g zurückgesetzt', date: new Date().toISOString() }];
+      saveSpools();
+      openConsume(s.id);
+      toast('Spule auf 1000 g gesetzt.');
+    });
+
+    $('searchInput').addEventListener('input', renderCards);
+    $('materialFilter').addEventListener('change', renderCards);
+    $('sortSelect').addEventListener('change', renderCards);
+
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => $(btn.dataset.close).close());
+    });
+
+    $('copyQrLinkBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(qrCurrentUrl);
+        toast('QR-Link kopiert.');
+      } catch {
+        toast('Kopieren nicht möglich. Link manuell markieren.');
+      }
+    });
+
+    $('downloadQrBtn').addEventListener('click', () => {
+      const canvas = $('qrBox').querySelector('canvas');
+      const img = $('qrBox').querySelector('img');
+      let url = '';
+      if (canvas) url = canvas.toDataURL('image/png');
+      if (img) url = img.src;
+      if (!url) return toast('QR-Code noch nicht bereit.');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'spooltrack-qr.png';
+      a.click();
+    });
+
+    $('exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), spools }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'spooltrack-backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    function openSyncSettings() {
+      $('cloudApiUrl').value = syncConfig.apiUrl || '';
+      $('syncDialog').showModal();
+      setTimeout(() => $('cloudApiUrl').focus(), 100);
+    }
+
+    $('syncNowBtn').addEventListener('click', () => {
+      if (normalizeApiUrl()) {
+        Promise.all([pullCloud(true), pushCloud()]).then(() => toast('Jetzt synchronisiert.')).catch(() => toast('Synchronisation fehlgeschlagen.'));
+      } else {
+        openSyncSettings();
+      }
+    });
+
+    $('syncSettingsBtn').addEventListener('click', openSyncSettings);
+
+    $('syncForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      syncConfig.apiUrl = $('cloudApiUrl').value.trim();
+      saveSyncConfig();
+      $('syncDialog').close();
+      startCloudSync();
+      if (syncConfig.apiUrl) toast('Worker-URL gespeichert. Automatischer Sync läuft.');
+    });
+
+    $('disableSyncBtn').addEventListener('click', () => {
+      syncConfig.apiUrl = '';
+      saveSyncConfig();
+      if (syncTimer) clearInterval(syncTimer);
+      clearTimeout(pushTimer);
+      pendingPush = false;
+      $('cloudApiUrl').value = '';
+      setSyncStatus('', 'Lokal');
+      toast('Cloud-Sync deaktiviert.');
+    });
+
+    $('pullCloudBtn').addEventListener('click', () => Promise.all([pullCloud(true), pushCloud()]).then(() => toast('Jetzt synchronisiert.')));
+
+    $('importBtn').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        const imported = Array.isArray(data) ? data : data.spools;
+        if (!Array.isArray(imported)) throw new Error('Ungültig');
+        if (!confirm('Import ersetzt dein aktuelles lokales Lager. Fortfahren?')) return;
+        spools = imported;
+        saveSpools();
+        toast('Import erfolgreich.');
+      } catch {
+        toast('Import fehlgeschlagen. JSON-Datei prüfen.');
+      } finally {
+        event.target.value = '';
+      }
+    });
+
+    $('resetDemoBtn').addEventListener('click', () => {
+      if (!confirm('Demo-Daten laden? Aktuelle lokale Daten werden ersetzt.')) return;
+      spools = JSON.parse(JSON.stringify(demoSpools));
+      saveSpools();
+      toast('Demo-Daten geladen.');
+    });
+
+    function handleHashRoute() {
+      const hash = location.hash.replace(/^#/, '');
+      const params = new URLSearchParams(hash);
+      const id = params.get('spool');
+      const mode = params.get('mode');
+      if (id && mode === 'consume') {
+        setTimeout(() => openConsume(id), 200);
+      }
+    }
+
+    window.addEventListener('hashchange', handleHashRoute);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+
+    render();
+    handleHashRoute();
+    startCloudSync();
+  </script>
+</body>
+</html>
